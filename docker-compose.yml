@@ -1,0 +1,72 @@
+version: '3.4'
+
+services:
+  php:
+    image: 'dev-magento2.4.2:master'
+    build:
+      context: ./
+      dockerfile: ./_docker/Dockerfile
+    volumes:
+      - .:/var/www/magento2:delegated
+      - './_docker/nginx.conf:/etc/nginx/nginx.conf:cached'
+      - './_docker/fastcgi_params:/etc/nginx/fastcgi_params:cached'
+      - './_docker/php-fpm.conf:/usr/local/etc/php-fpm.conf:cached'
+      - './_docker/php.ini:/usr/local/etc/php/php.ini:cached'
+    working_dir: '/var/www/magento2'
+    ports:
+      - '80:8000'
+    depends_on:
+      - mysql
+      - elasticsearch
+    networks:
+      - 'magento-2.4.2'
+
+  mysql:
+    image: 'mysql:8.0.22'
+    command: '--default-authentication-plugin=mysql_native_password'
+    environment:
+      MYSQL_ROOT_PASSWORD: 'root'
+      MYSQL_USER: 'magento'
+      MYSQL_DATABASE: 'magento'
+      MYSQL_PASSWORD: 'magento'
+    ports:
+      - '3306:3306'
+    networks:
+      - 'magento-2.4.2'
+
+  elasticsearch:
+    image: 'elasticsearch:7.12.1'
+    environment:
+      ES_JAVA_OPTS: '-Xms1024m -Xmx2048m'
+      discovery.type: 'single-node'
+    ports:
+      - '9200:9200'
+      - '9300:9300'
+    networks:
+      - 'magento-2.4.2'
+
+  redis:
+    image: 'redis:6.0.14'
+    networks:
+      - 'magento-2.4.2'
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - 8025:8025
+      - 1025:1025
+    networks:
+      - 'magento-2.4.2'
+
+#  sqldata:
+#    image: mcr.microsoft.com/mssql/server:2017-latest
+#    environment:
+#      - SA_PASSWORD=Pass@word
+#      - ACCEPT_EULA=Y
+#    ports:
+#      - "1433:1433"
+#    networks:
+#      - 'magento-2.4.2'
+
+networks:
+  magento-2.4.2:
